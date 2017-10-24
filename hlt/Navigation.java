@@ -53,4 +53,18 @@ public class Navigation {
 
         return new ThrustMove(ship, angleDeg, thrust);
     }
+
+    public static Position getFiringPosition(
+            final GameMap gameMap,
+            final Ship ship,
+            final Ship target)
+    {
+        Position p = target.getClosestPoint(ship);
+        double angle = ship.orientTowardsInRad(p);
+        double distance = ship.getDistanceTo(p);
+        double dx = Math.cos(angle)*distance;
+        double dy = Math.sin(angle)*distance;
+
+        return p;
+    }
 }
