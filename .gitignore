@@ -1,0 +1,5 @@
+*.class
+*.hlt
+*.log
+**/.idea/workspace.xml
+**/.idea/tasks.xml
