@@ -27,7 +27,9 @@ public class MyBot {
                 Ship ship1 = null;
                 Ship ship2 = null;
                 Ship ship3 = null;
-                for (Ship ship: gameMap.getMyPlayer().getShips().values()) {
+                ArrayList<Ship> ships = state.getMyShips();
+                ships.sort((o1, o2) -> (int) Math.round(o1.getYPos() - o2.getYPos()));
+                for (Ship ship: ships) {
                     if (ship1 == null) {
                         ship1 = ship;
                     } else if (ship2 == null) {
