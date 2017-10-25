@@ -24,44 +24,22 @@ public class MyBot {
 
             if (firstTurn) {
 
-                Ship ship1 = null;
-                Ship ship2 = null;
-                Ship ship3 = null;
                 ArrayList<Ship> ships = state.getMyShips();
                 ships.sort((o1, o2) -> (int) Math.round(o1.getYPos() - o2.getYPos()));
-                for (Ship ship: ships) {
-                    if (ship1 == null) {
-                        ship1 = ship;
-                    } else if (ship2 == null) {
-                        ship2 = ship;
-                    } else if (ship3 == null) {
-                        ship3 = ship;
-                    }
-                }
 
-                final Ship cmpShip = ship1;
-                final Ship cmpShip2 = ship2;
-                final Ship cmpship3 = ship3;
+                final Ship ship1 = ships.get(0);
+                final Ship ship2 = ships.get(1);
+                final Ship ship3 = ships.get(2);
 
-                ArrayList<Planet> closestPlanets = state.getDockablePlanets();
-                closestPlanets.sort((o1, o2) -> (int) (cmpShip.getDistanceTo(o1) - cmpShip.getDistanceTo(o2)));
-                Planet target1 = closestPlanets.get(0);
-                closestPlanets.sort((o1, o2) -> (int) (cmpShip2.getDistanceTo(o1) - cmpShip2.getDistanceTo(o2)));
-                Planet target2 = closestPlanets.get(0);
-                if (target1.getId() == target2.getId()) {
-                    target2 = closestPlanets.get(1);
-                }
-                closestPlanets.sort((o1, o2) -> (int) (cmpship3.getDistanceTo(o1) - cmpship3.getDistanceTo(o2)));
-                Planet target3 = closestPlanets.get(0);
-                int i = 1;
-                while (target3.getId() == target1.getId() || target3.getId() == target2.getId()) {
-                    target3 = closestPlanets.get(i);
-                    i++;
-                }
 
-                targetMap.put(ship1.getId(), ship1.getClosestPoint(target1));
-                targetMap.put(ship2.getId(), ship2.getClosestPoint(target2));
-                targetMap.put(ship3.getId(), ship3.getClosestPoint(target3));
+                ArrayList<Planet> planets = state.getDockablePlanets();
+                planets.sort((o1, o2) -> (int) (ship1.getDistanceTo(o1) - ship1.getDistanceTo(o2)));
+                List<Planet> closestPlanets = planets.subList(0, 3);
+                closestPlanets.sort((o1, o2) -> (int) Math.round(o1.getYPos() - o2.getYPos()));
+
+                targetMap.put(ship1.getId(), ship1.getClosestPoint(closestPlanets.get(0)));
+                targetMap.put(ship2.getId(), ship2.getClosestPoint(closestPlanets.get(1)));
+                targetMap.put(ship3.getId(), ship3.getClosestPoint(closestPlanets.get(2)));
 
 
                 DebugLog.addLog(ship1.getId() + "\tHas an order");
@@ -99,7 +77,7 @@ public class MyBot {
                 boolean fight = false;
                 for (final Ship hostile: state.getHostileShips()) {
                     double dist = ship.getDistanceTo(hostile);
-                    if (dist < 15.0) {
+                    if (dist < 22.0) {
                         fight = true;
                         if (dist < 5.0) {
                             break;
@@ -119,18 +97,27 @@ public class MyBot {
                 if (fight)
                     continue;
 
-                Planet closestPlanet = null;
+                Planet closestDockablePlanet = null;
                 for (final Planet planet : state.getDockablePlanets()) {
-                    if (closestPlanet == null || ship.getDistanceTo(planet) < ship.getDistanceTo(closestPlanet)){
-                        closestPlanet = planet;
+                    if (closestDockablePlanet == null || ship.getDistanceTo(planet) < ship.getDistanceTo(closestDockablePlanet)){
+                        closestDockablePlanet = planet;
                     }
                 }
-                if (closestPlanet != null) {
-                    if (ship.canDock(closestPlanet)) {
-                        moveList.add(new DockMove(ship, closestPlanet));
+
+                Planet closestHostilePlanet = null;
+                for (final Planet planet : state.getHostilePlanets()) {
+                    if (closestHostilePlanet == null || ship.getDistanceTo(planet) < ship.getDistanceTo(closestHostilePlanet)){
+                        closestHostilePlanet = planet;
+                    }
+                }
+
+
+                if (closestDockablePlanet != null && (closestHostilePlanet == null || closestDockablePlanet.getDistanceTo(ship) < closestHostilePlanet.getDistanceTo(ship))) {
+                    if (ship.canDock(closestDockablePlanet)) {
+                        moveList.add(new DockMove(ship, closestDockablePlanet));
                         DebugLog.addLog(ship.getId() + "\tStarting Docking");
                     } else {
-                        final ThrustMove newThrustMove = Navigation.navigateShipToDock(gameMap, ship, closestPlanet, Constants.MAX_SPEED);
+                        final ThrustMove newThrustMove = Navigation.navigateShipToDock(gameMap, ship, closestDockablePlanet, Constants.MAX_SPEED);
                         if (newThrustMove != null) {
                             moveList.add(newThrustMove);
                             DebugLog.addLog(ship.getId() + "\tMoving to Dock");
@@ -140,14 +127,8 @@ public class MyBot {
                 }
 
 
-                for (final Planet planet : state.getHostilePlanets()) {
-                    if (closestPlanet == null || ship.getDistanceTo(planet) < ship.getDistanceTo(closestPlanet)){
-                        closestPlanet = planet;
-                    }
-                }
-
-                if (closestPlanet != null && (3 * ship.getDistanceTo(closestPlanet) < ship.getDistanceTo(closestHostile))) {
-                    final ThrustMove newThrustMove = Navigation.navigateShipToDock(gameMap, ship, closestPlanet, Constants.MAX_SPEED);
+                if (closestHostilePlanet != null && (3 * ship.getDistanceTo(closestHostilePlanet) < ship.getDistanceTo(closestHostile))) {
+                    final ThrustMove newThrustMove = Navigation.navigateShipToDock(gameMap, ship, closestHostilePlanet, Constants.MAX_SPEED);
                     if (newThrustMove != null) {
                         moveList.add(newThrustMove);
                         DebugLog.addLog(ship.getId() + "\tMoving to Hostile Planet");
